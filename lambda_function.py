@@ -21,7 +21,4 @@ def lambda_handler(event, context):
             Body="\n".join(errors)
         )
 
-    return {
-        "statusCode": 200,
-        "body": "Processed successfully"
-    }
+    return {"statusCode": 200}
