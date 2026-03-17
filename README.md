@@ -148,39 +148,6 @@ After deployment:
 
 ---
 
-## ❌ Common Issues & Fixes
-
-### 🔴 Lambda Not Triggering
-
-✔ Ensure S3 notification is configured
-✔ Check Lambda permission (`aws_lambda_permission`)
-
----
-
-### 🔴 Access Denied (S3)
-
-✔ Verify IAM permissions:
-
-* `s3:GetObject`
-* `s3:PutObject`
-* `s3:ListBucket`
-
----
-
-### 🔴 Bucket Name Conflict
-
-✔ Bucket names must be globally unique
-✔ This project uses `random_id` to fix this
-
----
-
-### 🔴 Lambda Timeout
-
-✔ Increase timeout in Terraform:
-
-```hcl
-timeout = 15
-```
 
 ---
 
