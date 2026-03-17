@@ -67,14 +67,8 @@ resource "aws_iam_role_policy_attachment" "attach" {
 }
 
 # -----------------------
-# LAMBDA
+# LAMBDA (FIXED)
 # -----------------------
-
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_file = "${path.module}/lambda/lambda_function.py"
-  output_path = "${path.module}/lambda.zip"
-}
 
 resource "aws_lambda_function" "log_processor" {
   function_name = "${var.project_name}-processor"
@@ -83,8 +77,7 @@ resource "aws_lambda_function" "log_processor" {
   runtime = "python3.9"
   handler = "lambda_function.lambda_handler"
 
-  filename         = data.archive_file.lambda_zip.output_path
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  filename = "${path.module}/lambda.zip"
 
   timeout     = 15
   memory_size = 256
