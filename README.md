@@ -213,13 +213,6 @@ timeout = 15
 
 ---
 
-## 🧑‍💻 Author
-
-**Sanath Kumar**
-DevOps Engineer | AWS | Terraform | Automation
-
----
-
 ## ⭐ Why This Project?
 
 ✔ Real-world DevOps use case
