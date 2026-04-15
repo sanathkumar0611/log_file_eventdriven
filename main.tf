@@ -77,7 +77,7 @@ resource "aws_lambda_function" "log_processor" {
   runtime = "python3.9"
   handler = "lambda_function.lambda_handler"
 
-  filename = "${path.module}/lambda.zip"
+ filename = data.archive_file.lambda_zip.output_path
 
   timeout     = 15
   memory_size = 256
