@@ -97,7 +97,7 @@ resource "aws_lambda_function" "log_processor" {
 
   filename = data.archive_file.lambda_zip.output_path
 
-  timeout     = 30
+  timeout     = 90
   memory_size = 256
 
   #dependency fix
