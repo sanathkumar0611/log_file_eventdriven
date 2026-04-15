@@ -1,44 +1,16 @@
 import boto3
 import os
+import urllib.parse
 
 s3 = boto3.client('s3')
 
-# 🔥 Error → Debugging Commands Mapping
 ERROR_SOLUTIONS = {
-    "Disk space full": [
-        "df -h",
-        "du -sh *",
-        "sudo journalctl --vacuum-time=3d",
-        "rm -rf /tmp/*"
-    ],
-    "Memory issue": [
-        "free -m",
-        "top",
-        "ps aux --sort=-%mem | head",
-        "kill -9 <PID>"
-    ],
-    "CPU high": [
-        "top",
-        "htop",
-        "ps aux --sort=-%cpu | head"
-    ],
-    "Database connection failed": [
-        "systemctl status mysql",
-        "netstat -tulnp | grep 3306",
-        "telnet <db-host> 3306",
-        "check DB credentials"
-    ],
-    "Timeout": [
-        "check network latency",
-        "ping <service>",
-        "traceroute <service>",
-        "increase timeout config"
-    ],
-    "Permission denied": [
-        "ls -l",
-        "chmod 755 <file>",
-        "chown user:user <file>"
-    ]
+    "Disk space full": ["df -h", "du -sh *", "rm -rf /tmp/*"],
+    "Memory issue": ["free -m", "top", "ps aux --sort=-%mem | head"],
+    "CPU high": ["top", "ps aux --sort=-%cpu | head"],
+    "Database connection failed": ["systemctl status mysql", "netstat -tulnp | grep 3306"],
+    "Timeout": ["ping <service>", "traceroute <service>"],
+    "Permission denied": ["ls -l", "chmod 755 <file>"]
 }
 
 def lambda_handler(event, context):
@@ -46,35 +18,39 @@ def lambda_handler(event, context):
 
     for record in event['Records']:
         input_bucket = record['s3']['bucket']['name']
-        key = record['s3']['object']['key']
+        key = urllib.parse.unquote_plus(record['s3']['object']['key'])
 
-        response = s3.get_object(Bucket=input_bucket, Key=key)
-        content = response['Body'].read().decode('utf-8')
+        print(f"Processing file: {key}")
+
+        try:
+            response = s3.get_object(Bucket=input_bucket, Key=key)
+            content = response['Body'].read().decode('utf-8')
+        except Exception as e:
+            print("Error reading file:", str(e))
+            continue
 
         output_lines = []
 
         for line in content.splitlines():
             if "ERROR" in line:
-                output_lines.append(f"\n🔴 {line}")
+                output_lines.append(f"[ERROR] {line}")
 
-                # Match error type
                 matched = False
                 for error_key in ERROR_SOLUTIONS:
                     if error_key.lower() in line.lower():
-                        output_lines.append("💡 Suggested Debug Commands:")
+                        output_lines.append("Suggested Debug Commands:")
                         for cmd in ERROR_SOLUTIONS[error_key]:
-                            output_lines.append(f"   - {cmd}")
+                            output_lines.append(f" - {cmd}")
                         matched = True
                         break
 
                 if not matched:
-                    output_lines.append("💡 General Debugging:")
-                    output_lines.append("   - check logs")
-                    output_lines.append("   - restart service")
-                    output_lines.append("   - verify configuration")
+                    output_lines.append("General Debugging:")
+                    output_lines.append(" - check logs")
+                    output_lines.append(" - restart service")
 
         if not output_lines:
-            output_lines.append("✅ No errors found")
+            output_lines.append("No errors found")
 
         output_key = f"errors/{key}_debug.txt"
 
