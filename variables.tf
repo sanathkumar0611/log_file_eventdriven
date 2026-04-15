@@ -3,5 +3,5 @@ variable "aws_region" {
 }
 
 variable "project_name" {
-  default = "sanath-log-project"
+  default = "log-analyzer"
 }
