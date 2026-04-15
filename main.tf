@@ -37,8 +37,9 @@ resource "aws_iam_role" "lambda_role" {
   })
 }
 
+# Custom policy
 resource "aws_iam_policy" "lambda_policy" {
-  name = "${var.project_name}-lambda-policy"
+  name = "${var.project_name}-lambda-policy-${random_id.rand.hex}"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -61,18 +62,30 @@ resource "aws_iam_policy" "lambda_policy" {
   })
 }
 
+# Attach custom policy
 resource "aws_iam_role_policy_attachment" "attach" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.lambda_policy.arn
 }
-#--------------
+
+# AWS managed policy 
+resource "aws_iam_role_policy_attachment" "basic_lambda" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+# -----------------------
+# ZIP CREATION
+# -----------------------
+
 data "archive_file" "lambda_zip" {
   type        = "zip"
   source_file = "${path.module}/lambda_function.py"
   output_path = "${path.module}/lambda.zip"
 }
+
 # -----------------------
-# LAMBDA (FIXED)
+# LAMBDA
 # -----------------------
 
 resource "aws_lambda_function" "log_processor" {
@@ -82,10 +95,16 @@ resource "aws_lambda_function" "log_processor" {
   runtime = "python3.9"
   handler = "lambda_function.lambda_handler"
 
- filename = data.archive_file.lambda_zip.output_path
+  filename = data.archive_file.lambda_zip.output_path
 
-  timeout     = 15
+  timeout     = 30
   memory_size = 256
+
+  #dependency fix
+  depends_on = [
+    aws_iam_role_policy_attachment.attach,
+    aws_iam_role_policy_attachment.basic_lambda
+  ]
 
   environment {
     variables = {
