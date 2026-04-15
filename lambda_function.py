@@ -5,12 +5,12 @@ import urllib.parse
 s3 = boto3.client('s3')
 
 ERROR_SOLUTIONS = {
-    "Disk space full": ["df -h", "du -sh *", "rm -rf /tmp/*"],
-    "Memory issue": ["free -m", "top", "ps aux --sort=-%mem | head"],
-    "CPU high": ["top", "ps aux --sort=-%cpu | head"],
-    "Database connection failed": ["systemctl status mysql", "netstat -tulnp | grep 3306"],
-    "Timeout": ["ping <service>", "traceroute <service>"],
-    "Permission denied": ["ls -l", "chmod 755 <file>"]
+    "disk space full": ["df -h", "du -sh *", "rm -rf /tmp/*"],
+    "memory issue": ["free -m", "top", "ps aux --sort=-%mem | head"],
+    "cpu high": ["top", "ps aux --sort=-%cpu | head"],
+    "database connection failed": ["systemctl status mysql", "netstat -tulnp | grep 3306"],
+    "timeout": ["ping <service>", "traceroute <service>"],
+    "permission denied": ["ls -l", "chmod 755 <file>"]
 }
 
 def lambda_handler(event, context):
@@ -24,20 +24,21 @@ def lambda_handler(event, context):
 
         try:
             response = s3.get_object(Bucket=input_bucket, Key=key)
-            content = response['Body'].read().decode('utf-8')
         except Exception as e:
             print("Error reading file:", str(e))
             continue
 
         output_lines = []
 
-        for line in content.splitlines():
-            if "ERROR" in line:
+        for line in response['Body'].iter_lines():
+            line = line.decode('utf-8')
+
+            if "error" in line.lower():
                 output_lines.append(f"[ERROR] {line}")
 
                 matched = False
                 for error_key in ERROR_SOLUTIONS:
-                    if error_key.lower() in line.lower():
+                    if error_key in line.lower():
                         output_lines.append("Suggested Debug Commands:")
                         for cmd in ERROR_SOLUTIONS[error_key]:
                             output_lines.append(f" - {cmd}")
@@ -52,12 +53,16 @@ def lambda_handler(event, context):
         if not output_lines:
             output_lines.append("No errors found")
 
-        output_key = f"errors/{key}_debug.txt"
+        filename = os.path.basename(key)
+        output_key = f"errors/{filename}_debug.txt"
+
+        print(f"Writing output to: {output_key}")
 
         s3.put_object(
             Bucket=output_bucket,
             Key=output_key,
-            Body="\n".join(output_lines)
+            Body="\n".join(output_lines),
+            ContentType="text/plain"
         )
 
     return {
