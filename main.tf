@@ -11,11 +11,21 @@ resource "random_id" "rand" {
 # -----------------------
 
 resource "aws_s3_bucket" "input_bucket" {
-  bucket = "${var.project_name}-input-${random_id.rand.hex}"
+  bucket        = "${var.project_name}-input-${random_id.rand.hex}"
+  force_destroy = true
+
+  tags = {
+    Name = "Input Bucket"
+  }
 }
 
 resource "aws_s3_bucket" "output_bucket" {
-  bucket = "${var.project_name}-output-${random_id.rand.hex}"
+  bucket        = "${var.project_name}-output-${random_id.rand.hex}"
+  force_destroy = true
+
+  tags = {
+    Name = "Output Bucket"
+  }
 }
 
 # -----------------------
@@ -37,7 +47,7 @@ resource "aws_iam_role" "lambda_role" {
   })
 }
 
-# Custom policy
+# Least privilege policy
 resource "aws_iam_policy" "lambda_policy" {
   name = "${var.project_name}-lambda-policy-${random_id.rand.hex}"
 
@@ -47,11 +57,13 @@ resource "aws_iam_policy" "lambda_policy" {
       {
         Action = [
           "s3:GetObject",
-          "s3:PutObject",
-          "s3:ListBucket"
+          "s3:PutObject"
         ]
         Effect = "Allow"
-        Resource = "*"
+        Resource = [
+          "${aws_s3_bucket.input_bucket.arn}/*",
+          "${aws_s3_bucket.output_bucket.arn}/*"
+        ]
       },
       {
         Action = ["logs:*"]
@@ -62,13 +74,11 @@ resource "aws_iam_policy" "lambda_policy" {
   })
 }
 
-# Attach custom policy
 resource "aws_iam_role_policy_attachment" "attach" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.lambda_policy.arn
 }
 
-# AWS managed policy 
 resource "aws_iam_role_policy_attachment" "basic_lambda" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
@@ -97,20 +107,19 @@ resource "aws_lambda_function" "log_processor" {
 
   filename = data.archive_file.lambda_zip.output_path
 
-  timeout     = 90
+  timeout     = 60
   memory_size = 256
-
-  #dependency fix
-  depends_on = [
-    aws_iam_role_policy_attachment.attach,
-    aws_iam_role_policy_attachment.basic_lambda
-  ]
 
   environment {
     variables = {
       OUTPUT_BUCKET = aws_s3_bucket.output_bucket.bucket
     }
   }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.attach,
+    aws_iam_role_policy_attachment.basic_lambda
+  ]
 }
 
 # -----------------------
@@ -131,6 +140,7 @@ resource "aws_s3_bucket_notification" "trigger" {
   lambda_function {
     lambda_function_arn = aws_lambda_function.log_processor.arn
     events              = ["s3:ObjectCreated:*"]
+    filter_suffix       = ".log"
   }
 
   depends_on = [aws_lambda_permission.allow_s3]
