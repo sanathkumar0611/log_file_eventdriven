@@ -1,1 +1,2 @@
-project_name = "sanath-log-project"
+aws_region   = "ap-south-1"
+project_name = "log-analyzer"
