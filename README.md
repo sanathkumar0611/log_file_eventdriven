@@ -1,211 +1,180 @@
-# 🚀 Log File Collection & Processing using AWS + Terraform
+# 📊 Event-Driven Log Analyzer (AWS + Terraform)
 
+## 🚀 Project Overview
 
-## 📌 Overview
+This project implements an **event-driven log processing system** using AWS services and Terraform.
+Whenever a log file is uploaded to an S3 bucket, an AWS Lambda function is automatically triggered to:
 
-This project implements an **event-driven log processing pipeline** using AWS and Terraform.
-
-Whenever a log file is uploaded to an S3 bucket:
-
-* AWS Lambda is automatically triggered
-* It scans the file for **ERROR logs**
-* Extracts only error lines
-* Stores processed output in another S3 bucket
+* Detect errors in logs
+* Suggest debugging commands
+* Store the processed output in another S3 bucket
 
 ---
 
-## 🏗️ Architecture Diagram
+## 🧠 Architecture
 
-```mermaid
-flowchart TD
-    A[S3 Input Bucket] -->|Upload Log File| B[S3 Event Trigger]
-    B --> C[Lambda Function]
-    C -->|Extract ERROR logs| D[S3 Output Bucket]
-```
-
----
-
-## ⚙️ Tech Stack
-
-| Tool       | Purpose                |
-| ---------- | ---------------------- |
-| AWS S3     | Storage                |
-| AWS Lambda | Serverless Processing  |
-| IAM        | Access Control         |
-| Terraform  | Infrastructure as Code |
-| Python     | Log Processing         |
+* **Amazon S3 (Input Bucket)** → Upload log files
+* **AWS Lambda** → Processes logs and detects errors
+* **Amazon S3 (Output Bucket)** → Stores debug reports
+* **AWS IAM** → Provides secure access
+* **Terraform** → Automates infrastructure provisioning
 
 ---
 
 ## 📁 Project Structure
 
-```bash
-log-file-collection-terraform/
-│
+```
+.
 ├── main.tf
 ├── variables.tf
 ├── outputs.tf
 ├── terraform.tfvars
-├── lambda/
-│   ├── lambda_function.py
-│   └── requirements.txt
+├── lambda_function.py
+└── README.md
 ```
 
 ---
 
-## 🔧 Prerequisites
+## ⚙️ Prerequisites
 
-* AWS Account (Free Tier)
-* Terraform ≥ 1.0
-* AWS CLI configured
+Before you start, ensure you have:
 
-```bash
-aws configure
+* AWS account
+* AWS CLI configured (`aws configure`)
+* Terraform installed
+* Python (for Lambda development)
+
+---
+
+## 🔧 Step-by-Step Setup
+
+### Step 1: Clone Repository
+
+```
+git clone https://github.com/your-username/log-file-event-driven.git
+cd log-file-event-driven
 ```
 
 ---
 
-## 🚀 Deployment Steps
+### Step 2: Initialize Terraform
 
-### 1️⃣ Clone Repository
-
-```bash
-git clone https://github.com/sanathkumar0611/Log_file_collection.git
-cd log-file-collection-terraform
 ```
-
-### 2️⃣ Initialize Terraform
-
-```bash
 terraform init
 ```
 
-### 3️⃣ Validate Configuration
+---
 
-```bash
-terraform validate
+### Step 3: Review Execution Plan
+
 ```
-
-### 4️⃣ Plan Deployment
-
-```bash
 terraform plan
 ```
 
-### 5️⃣ Apply Infrastructure
+---
 
-```bash
+### Step 4: Deploy Infrastructure
+
+```
 terraform apply
 ```
 
-Type:
+Type `yes` when prompted.
 
-```bash
-yes
+---
+
+### Step 5: Verify Resources
+
+After deployment, Terraform will create:
+
+* Input S3 bucket
+* Output S3 bucket
+* Lambda function
+* IAM roles and policies
+
+---
+
+### Step 6: Upload Log File
+
+Upload a `.log` file to the **input S3 bucket**.
+
+Example log file:
+
+```
+ERROR: disk space full
+ERROR: permission denied
 ```
 
 ---
 
-## 🧪 Testing
+### Step 7: Check Output
 
-### Sample Input File
-
-```txt
-INFO Server started
-ERROR Database failed
-INFO Request completed
-ERROR Timeout occurred
-```
-
-📤 Upload this file to the **input S3 bucket**
-
----
-
-## 📥 Expected Output
-
-A new file will be created in the output bucket:
+Go to the **output S3 bucket** and navigate to:
 
 ```
-errors_<filename>
+errors/
 ```
 
-### Output Content
+You will find a file like:
 
-```txt
-ERROR Database failed
-ERROR Timeout occurred
+```
+<filename>_debug.txt
 ```
 
 ---
 
-## 📊 Terraform Outputs
+## 📄 Sample Output
 
-After deployment:
+```
+Processed at: 2026-04-15
 
-* ✅ Input Bucket Name
-* ✅ Output Bucket Name
-* ✅ Lambda Function Name
+[ERROR] ERROR: disk space full
+Suggested Debug Commands:
+ - df -h
+ - du -sh *
+ - rm -rf /tmp/*
 
----
-
-
----
-
-## 💰 Cost Optimization (Free Tier)
-
-| Service    | Free Limit         |
-| ---------- | ------------------ |
-| S3         | 5 GB               |
-| Lambda     | 1M requests/month  |
-| CloudWatch | Limited free usage |
+[ERROR] ERROR: permission denied
+Suggested Debug Commands:
+ - ls -l
+ - chmod 755 <file>
+```
 
 ---
 
-## 🔒 Security Best Practices
+## ✨ Features
 
-* Use least privilege IAM roles
-* Avoid hardcoding credentials
-* Use environment variables
-* Enable logging & monitoring
-
----
-
-## 🚀 Future Enhancements
-
-* 📢 SNS Alerts for errors
-* 📊 CloudWatch Dashboard
-* 📦 Dead Letter Queue (SQS)
-* 🔄 CI/CD Pipeline (GitHub Actions)
-* 🤖 AI-based Log Analysis
+* Event-driven automation
+* Real-time log processing
+* Predefined troubleshooting suggestions
+* Regex-based error detection
+* Fully automated infrastructure using Terraform
 
 ---
 
-## ⭐ Why This Project?
+## 🔐 Security Best Practices
 
-✔ Real-world DevOps use case
-✔ Serverless architecture
-✔ Event-driven automation
-✔ Production-ready Terraform
-✔ Strong portfolio project
+* IAM roles with least privilege access
+* Environment variables for configuration
+* Controlled S3 access permissions
 
 ---
 
-## 🏁 Cleanup
+## 🧹 Cleanup
 
-Destroy all resources:
+To destroy all resources:
 
-```bash
+```
 terraform destroy
 ```
 
 ---
 
-## 📌 Conclusion
+## 🚀 Future Enhancements
 
-This project demonstrates:
+* Add SNS alerts for critical errors
+* Integrate CloudWatch dashboards
+* Store error patterns in DynamoDB
+* Add CI/CD pipeline using GitHub Actions
 
-* Infrastructure as Code using Terraform
-* Serverless computing with AWS Lambda
-* Event-driven architecture using S3 triggers
-
-A complete **production-grade DevOps automation project** 🚀
+---
