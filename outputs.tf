@@ -1,11 +1,11 @@
-output "input_bucket" {
+output "input_bucket_name" {
   value = aws_s3_bucket.input_bucket.bucket
 }
 
-output "output_bucket" {
+output "output_bucket_name" {
   value = aws_s3_bucket.output_bucket.bucket
 }
 
-output "lambda_name" {
+output "lambda_function_name" {
   value = aws_lambda_function.log_processor.function_name
 }
