@@ -1,6 +1,8 @@
 import boto3
 import os
 import urllib.parse
+import re
+from datetime import datetime
 
 s3 = boto3.client('s3')
 
@@ -20,15 +22,10 @@ def lambda_handler(event, context):
         input_bucket = record['s3']['bucket']['name']
         key = urllib.parse.unquote_plus(record['s3']['object']['key'])
 
-        print(f"Processing file: {key}")
-
-        try:
-            response = s3.get_object(Bucket=input_bucket, Key=key)
-        except Exception as e:
-            print("Error reading file:", str(e))
-            continue
+        response = s3.get_object(Bucket=input_bucket, Key=key)
 
         output_lines = []
+        output_lines.append(f"Processed at: {datetime.now()}")
 
         for line in response['Body'].iter_lines():
             line = line.decode('utf-8')
@@ -38,7 +35,7 @@ def lambda_handler(event, context):
 
                 matched = False
                 for error_key in ERROR_SOLUTIONS:
-                    if error_key in line.lower():
+                    if re.search(error_key, line, re.IGNORECASE):
                         output_lines.append("Suggested Debug Commands:")
                         for cmd in ERROR_SOLUTIONS[error_key]:
                             output_lines.append(f" - {cmd}")
@@ -50,13 +47,11 @@ def lambda_handler(event, context):
                     output_lines.append(" - check logs")
                     output_lines.append(" - restart service")
 
-        if not output_lines:
+        if len(output_lines) == 1:
             output_lines.append("No errors found")
 
         filename = os.path.basename(key)
         output_key = f"errors/{filename}_debug.txt"
-
-        print(f"Writing output to: {output_key}")
 
         s3.put_object(
             Bucket=output_bucket,
