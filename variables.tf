@@ -1,7 +1,7 @@
 variable "aws_region" {
-  default = "ap-south-1"
+  type = string
 }
 
 variable "project_name" {
-  default = "log-analyzer"
+  type = string
 }
